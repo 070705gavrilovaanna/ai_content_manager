@@ -118,9 +118,9 @@ async def view_file(file_type: str, filename: str):
     
     return {'content': content}
 
-@app.post("/publish")
+@app.post('/publish')
 async def publish_file(filename: str = Form(...)):
-    """Публикует черновик и перенаправляет на /stats"""
+    '''публикует черновик и перенаправляет на /stats'''
     src = f"{config.DRAFTS_DIR}/{filename}"
     dst = f"{config.PUBLISHED_DIR}/{filename}"
     
