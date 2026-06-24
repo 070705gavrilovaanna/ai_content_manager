@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .card table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .card table th,
+        .card table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .card table th {
+            background: #f0f0f0;
+        }
+        .card .stats-content {
+            line-height: 1.8;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+        .file-list li {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-list .actions button {
+            padding: 0.3rem 0.8rem;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .file-list .actions button:hover {
+            background: #45a049;
+        }
+        .back {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .back:hover {
+            background: #5a6fd6;
+            text-decoration: none;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .stats-content h1,
+        .stats-content h2,
+        .stats-content h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .stats-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .stats-content table th,
+        .stats-content table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .stats-content table th {
+            background: #f0f0f0;
+        }
+        .stats-content hr {
+            border: none;
+            border-top: 2px solid #eee;
+            margin: 1rem 0;
+        }
+        .stats-content strong {
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Файлы</h1>
+        <a href="/" class="back">Назад</a>
+
+        <div class="card">
+            <h2>Статистика</h2>
+            <div class="stats-content" id="statsContent">{{ stats }}</div>
+        </div>
+
+        <div class="card">
+            <h2>Черновики</h2>
+            {% if drafts %}
+                <ul class="file-list">
+                {% for file in drafts %}
+                    <li>
+                        <span>{{ file }}</span>
+                        <div class="actions">
+                            <button onclick="viewFile('drafts', '{{ file }}')">Просмотр</button>
+                            <form method="post" action="/publish" style="display:inline;">
+                                <input type="hidden" name="filename" value="{{ file }}">
+                                <button type="submit">Опубликовать</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>Нет черновиков</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Опубликованные</h2>
+            {% if published %}
+                <ul class="file-list">
+                {% for file in published %}
+                    <li>
+                        <span>{{ file }}</span>
+                        <div class="actions">
+                            <button onclick="viewFile('published', '{{ file }}')">Просмотр</button>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>Нет опубликованных</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function viewFile(type, filename) {
+            fetch(`/view_file/${type}/${filename}`)
+                .then(r => r.json())
+                .then(data => {
+                    alert(data.content || data.error);
+                });
+        }
+
+        // Преобразуем Markdown в HTML для статистики
+        document.addEventListener('DOMContentLoaded', function() {
+            const statsContent = document.getElementById('statsContent');
+            if (statsContent) {
+                statsContent.innerHTML = marked.parse(statsContent.textContent);
+            }
+        });
+    </script>
+</body>
+</html>

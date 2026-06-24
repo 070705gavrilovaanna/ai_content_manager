@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Контент-менеджер</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .sidebar h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        .sidebar .stats {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+        .sidebar .stats table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .sidebar .stats table th,
+        .sidebar .stats table td {
+            border: 1px solid #ddd;
+            padding: 0.3rem 0.6rem;
+            text-align: left;
+        }
+        .sidebar .stats table th {
+            background: #f0f0f0;
+        }
+        .sidebar .idea-item {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .sidebar .idea-item strong {
+            color: #667eea;
+        }
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .chat-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .chat-box .message {
+            margin-bottom: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+        .chat-box .user {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        .chat-box .assistant {
+            background: #f5f5f5;
+            border-left: 4px solid #4caf50;
+        }
+        .chat-box .assistant #botResponse {
+            white-space: pre-wrap;
+        }
+        .chat-box .assistant #botResponse h1,
+        .chat-box .assistant #botResponse h2,
+        .chat-box .assistant #botResponse h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .chat-box .assistant #botResponse ul,
+        .chat-box .assistant #botResponse ol {
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .chat-box .assistant #botResponse table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .chat-box .assistant #botResponse table th,
+        .chat-box .assistant #botResponse table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .chat-box .assistant #botResponse table th {
+            background: #f0f0f0;
+        }
+        .chat-box .assistant #botResponse hr {
+            border: none;
+            border-top: 2px solid #eee;
+            margin: 1rem 0;
+        }
+        .chat-box .assistant #botResponse strong {
+            font-weight: 700;
+        }
+        .chat-box .assistant #botResponse em {
+            font-style: italic;
+        }
+        .chat-box .empty {
+            color: #999;
+            text-align: center;
+            padding: 2rem 0;
+        }
+        .input-area {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .input-area form {
+            display: flex;
+            gap: 1rem;
+        }
+        .input-area input[type="text"] {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .input-area input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .input-area button {
+            padding: 0.8rem 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .input-area button:hover {
+            background: #5a6fd6;
+        }
+        .quick-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .quick-buttons .qb {
+            padding: 0.4rem 1rem;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .quick-buttons .qb:hover {
+            background: #e0e0e0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .input-area form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Контент-менеджер</h1>
+        <p>Генерируй идеи через AI и создавай контент</p>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>Статистика</h3>
+            <div class="stats" id="sidebarStats">{{ stats if stats else "Нет данных" }}</div>
+
+            <h3>Идеи</h3>
+            {% if ideas %}
+                {% for idea in ideas %}
+                    <div class="idea-item">
+                        <strong>{{ idea.topic }}</strong> ({{ idea.count }} идей)
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="idea-item">Нет идей</div>
+            {% endif %}
+
+            <div class="nav-links">
+                <a href="/stats">Файлы</a>
+                <a href="/ideas">Все идеи</a>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="chat-box" id="chatBox">
+                {% if user_input and response %}
+                    <div class="message user"><strong>Вы:</strong> {{ user_input }}</div>
+                    <div class="message assistant">
+                        <strong>Бот:</strong>
+                        <div id="botResponse">{{ response | safe }}</div>
+                    </div>
+                {% else %}
+                    <div class="empty">Напиши что-нибудь в чат ниже</div>
+                {% endif %}
+            </div>
+
+            <div class="input-area">
+                <form method="post" action="/chat">
+                    <input type="text" name="user_input" placeholder="Напиши команду..." required>
+                    <input type="hidden" name="session_id" value="default">
+                    <button type="submit">Отправить</button>
+                </form>
+
+                <div class="quick-buttons">
+                    <button class="qb" onclick="sendCommand('идея бизнес')">Идеи бизнес</button>
+                    <button class="qb" onclick="sendCommand('план здоровье 5')">План</button>
+                    <button class="qb" onclick="sendCommand('статья финансы')">Статья</button>
+                    <button class="qb" onclick="sendCommand('статистика')">Статистика</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sendCommand(command) {
+            document.querySelector('input[name="user_input"]').value = command;
+            document.querySelector('form').submit();
+        }
+
+        function renderMarkdownAndMath() {
+            const botResponse = document.getElementById('botResponse');
+            if (botResponse) {
+                botResponse.innerHTML = marked.parse(botResponse.textContent);
+            }
+            const sidebarStats = document.getElementById('sidebarStats');
+            if (sidebarStats) {
+                sidebarStats.innerHTML = marked.parse(sidebarStats.textContent);
+            }
+            if (window.MathJax && typeof MathJax.typeset === 'function') {
+                MathJax.typeset();
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            renderMarkdownAndMath();
+        });
+        const chatBox = document.getElementById('chatBox');
+        if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>

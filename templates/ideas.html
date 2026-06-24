@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все идеи</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .back:hover {
+            background: #5a6fd6;
+            text-decoration: none;
+        }
+        .topic {
+            margin-bottom: 1.5rem;
+        }
+        .topic h3 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        .topic ul {
+            list-style: none;
+            padding: 0;
+        }
+        .topic ul li {
+            padding: 0.5rem;
+            background: #f8f9fa;
+            margin: 0.3rem 0;
+            border-radius: 6px;
+        }
+        .add-idea {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 2px solid #eee;
+        }
+        .add-idea input,
+        .add-idea textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .add-idea button {
+            padding: 0.8rem 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .add-idea button:hover {
+            background: #5a6fd6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Все идеи</h1>
+        <a href="/" class="back">Назад</a>
+
+        <div class="card">
+            {% if all_ideas %}
+                {% for topic, ideas in all_ideas.items() %}
+                    <div class="topic">
+                        <h3>{{ topic }} ({{ ideas|length }} идей)</h3>
+                        <ul>
+                            {% for idea in ideas %}
+                                <li>{{ idea }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Нет сохраненных идей</p>
+            {% endif %}
+        </div>
+
+        <div class="card add-idea">
+            <h3>Добавить идею</h3>
+            <form method="post" action="/add_idea">
+                <input type="text" name="topic" placeholder="Тема" required>
+                <textarea name="idea" rows="3" placeholder="Идея" required></textarea>
+                <button type="submit">Добавить</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
