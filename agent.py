@@ -1,16 +1,11 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
+from langgraph.checkpoint.memory import MemorySaver
 from datetime import datetime
 import os
 import json
 from config import config
-
-base_llm = ChatOpenAI(
-    base_url='https://openrouter.ai/api/v1',
-    api_key=config.OPENROUTER_API_KEY,
-    model=config.OPENROUTER_MODEL,
-    temperature=config.TEMPERATURE
-)
 
 
 @tool
@@ -169,67 +164,36 @@ def get_stats() -> str:
 | **Сохранённых идей** | {ideas_count} |
 """
 
+base_llm = ChatOpenAI(
+    base_url='https://openrouter.ai/api/v1',
+    api_key=config.OPENROUTER_API_KEY,
+    model=config.OPENROUTER_MODEL,
+    temperature=config.TEMPERATURE
+)
+
+
+tools = [generate_ideas, create_plan, write_article, write_post, save_ideas, get_saved_ideas, 
+         add_idea, list_topics, save_local, publish_local, search_local, get_stats]
+
+memory = MemorySaver()
+agent = create_react_agent(base_llm, tools, checkpointer=memory)
+
+
 def run_agent(user_input: str, session_id: str = 'default'):
-    input_lower = user_input.lower()
-    
-    if input_lower.startswith('идея '):
-        return generate_ideas.invoke({'topic': user_input[5:].strip()})
-    
-    elif input_lower.startswith('сохранить идеи '):
-        topic = user_input[15:].strip()
-        ideas = generate_ideas.invoke({'topic': topic})
-        save_ideas.invoke({'topic': topic, 'ideas': ideas})
-        return f"{ideas}\n\nИдеи сохранены!"
-    
-    elif input_lower.startswith('мои идеи '):
-        return get_saved_ideas.invoke({'topic': user_input[9:].strip()})
-    
-    elif input_lower.startswith('добавить идею '):
-        parts = user_input[13:].split(' ', 1)
-        if len(parts) == 2:
-            return add_idea.invoke({'topic': parts[0], 'idea': parts[1]})
-        return 'Используй: добавить идею [тема] [идея]'
-    
-    elif input_lower == 'темы':
-        return list_topics.invoke({})
-    
-    elif input_lower.startswith('план '):
-        parts = user_input[5:].split()
-        if len(parts) >= 2 and parts[-1].isdigit():
-            topic = ' '.join(parts[:-1])
-            days = int(parts[-1])
-            return create_plan.invoke({'topic': topic, 'days': days})
-        return create_plan.invoke({'topic': user_input[5:].strip()})
-    
-    elif input_lower.startswith('статья '):
-        return write_article.invoke({'topic': user_input[7:].strip()})
-    
-    elif input_lower.startswith('пост '):
-        return write_post.invoke({'topic': user_input[5:].strip()})
-    
-    elif input_lower.startswith('сохранить '):
-        parts = user_input[10:].split(' ', 1)
-        if len(parts) == 2:
-            return save_local.invoke({'title': parts[0], 'content': parts[1]})
-        return 'Используй: сохранить [название] [текст]'
-    
-    elif input_lower.startswith('опубликовать '):
-        return publish_local.invoke({'title': user_input[13:].strip()})
-    
-    elif input_lower.startswith('поиск '):
-        return search_local.invoke({'query': user_input[6:].strip()})
-    
-    elif input_lower == 'статистика':
-        return get_stats.invoke({})
-    
-    else:
-        prompt = f"Пользователь спросил: '{user_input}'. Ответь как полезный AI-помощник."
-        return base_llm.invoke(prompt).content
+    config_agent = {'configurable': {'thread_id': session_id}}
+    try:
+        response = agent.invoke(
+            {'messages': [('human', user_input)]},
+            config_agent
+        )
+        return response["messages"][-1].content
+    except Exception as e:
+        return f'Ошибка: {e}'
 
 
 if __name__ == '__main__':
     print('\nAI Контент-Менеджер')
-    print('=' * 40)
+    print('-' * 40)
     print('Команды: идея, план, статья, пост, статистика, поиск, опубликовать, exit\n')
     while True:
         user_input = input('Вы: ')
