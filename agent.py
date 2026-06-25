@@ -8,6 +8,14 @@ import json
 from config import config
 
 
+base_llm = ChatOpenAI(
+    base_url='https://openrouter.ai/api/v1',
+    api_key=config.OPENROUTER_API_KEY,
+    model=config.OPENROUTER_MODEL,
+    temperature=config.TEMPERATURE
+)
+
+
 @tool
 def generate_ideas(topic: str) -> str:
     '''Генерирует 5 идей для контента'''
@@ -163,14 +171,6 @@ def get_stats() -> str:
 | **Всего материалов** | {drafts + published} |
 | **Сохранённых идей** | {ideas_count} |
 """
-
-base_llm = ChatOpenAI(
-    base_url='https://openrouter.ai/api/v1',
-    api_key=config.OPENROUTER_API_KEY,
-    model=config.OPENROUTER_MODEL,
-    temperature=config.TEMPERATURE
-)
-
 
 tools = [generate_ideas, create_plan, write_article, write_post, save_ideas, get_saved_ideas, 
          add_idea, list_topics, save_local, publish_local, search_local, get_stats]
